@@ -49,6 +49,11 @@ contract ArtemisDAOVoting is Ownable, Groth16Verifier, Pausable {
         uint256 duration,
         uint256 _quorum
     ) external onlyOwner {
+        require(duration > 0, "Duration should be greater than zero");
+        require(
+            _quorum >= 0 && _quorum <= 100,
+            "Quorum should be between 0 and 100"
+        );
         proposalCount += 1;
         proposals[proposalCount].merkleRoot = _merkleRoot;
         proposals[proposalCount].proposalDescription = description;
@@ -58,29 +63,43 @@ contract ArtemisDAOVoting is Ownable, Groth16Verifier, Pausable {
         emit ProposalAdded(proposalCount, description);
     }
 
+    function getProposal(uint256 proposalId)
+        external
+        view
+        returns (
+            bytes32 merkleRoot,
+            string memory proposalDescription,
+            uint256 startTime,
+            uint256 endTime,
+            uint256 quorum,
+            bool hasEnded
+        )
+    {
+        Proposal storage proposal = proposals[proposalId];
+        return (
+            proposal.merkleRoot,
+            proposal.proposalDescription,
+            proposal.startTime,
+            proposal.endTime,
+            proposal.quorum,
+            proposal.hasEnded
+        );
+    }
+
     function voteForProposal(
         uint256 proposalId,
         bool support,
-        uint[2] calldata _pA,
-        uint[2][2] calldata _pB,
-        uint[2] calldata _pC,
-        uint[2] calldata _pubSignals,
         bytes32[] calldata merkleProof,
         bytes32 leaf
     ) external whenNotPaused {
         Proposal storage proposal = proposals[proposalId];
         require(proposal.merkleRoot != 0, "Invalid proposal.");
         require(!proposal.hasEnded, "Voting has ended for this proposal.");
-        require(
-            block.timestamp >= proposal.startTime,
-            "Voting not yet started."
-        );
-        require(block.timestamp <= proposal.endTime, "Voting time has ended.");
+        if (block.timestamp < proposal.startTime) revert NotYetStarted();
+        if (block.timestamp > proposal.endTime) revert VotingEnded();
+
         require(!proposal.voted[leaf], "Already voted.");
 
-        if (!verifier.verifyProof(_pA, _pB, _pC, _pubSignals)) {
-            revert InvalidZkSnarkProof();
-        }
         if (!verifyMerkleProof(proposal, merkleProof, leaf)) {
             revert InvalidMerkleProof();
         }
