@@ -18,6 +18,7 @@ contract ArtemisDAOVoting is Ownable, Groth16Verifier, Pausable {
         uint256 endTime;
         uint256 quorum; // Expressed as a percentage
         bool hasEnded;
+        uint256 passcodeHash;
     }
 
     mapping(uint256 => Proposal) public proposals;
@@ -47,7 +48,8 @@ contract ArtemisDAOVoting is Ownable, Groth16Verifier, Pausable {
         string memory description,
         bytes32 _merkleRoot,
         uint256 duration,
-        uint256 _quorum
+        uint256 _quorum,
+        uint256 passcodeHash
     ) external onlyOwner {
         require(duration > 0, "Duration should be greater than zero");
 
@@ -62,10 +64,13 @@ contract ArtemisDAOVoting is Ownable, Groth16Verifier, Pausable {
         proposals[proposalCount].startTime = block.timestamp;
         proposals[proposalCount].endTime = block.timestamp + duration;
         proposals[proposalCount].quorum = _quorum;
+        proposals[proposalCount].passcodeHash = passcodeHash;
         emit ProposalAdded(proposalCount, description);
     }
 
-    function getProposal(uint256 proposalId)
+    function getProposal(
+        uint256 proposalId
+    )
         external
         view
         returns (
@@ -74,6 +79,7 @@ contract ArtemisDAOVoting is Ownable, Groth16Verifier, Pausable {
             uint256 startTime,
             uint256 endTime,
             uint256 quorum,
+            uint256 passcodeHash,
             bool hasEnded
         )
     {
@@ -84,6 +90,7 @@ contract ArtemisDAOVoting is Ownable, Groth16Verifier, Pausable {
             proposal.startTime,
             proposal.endTime,
             proposal.quorum,
+            proposal.passcodeHash,
             proposal.hasEnded
         );
     }
@@ -92,19 +99,31 @@ contract ArtemisDAOVoting is Ownable, Groth16Verifier, Pausable {
         uint256 proposalId,
         bool support,
         bytes32[] calldata merkleProof,
-        bytes32 leaf
+        bytes32 leaf,
+        uint256[] memory proof
     ) external whenNotPaused {
         Proposal storage proposal = proposals[proposalId];
         require(proposal.merkleRoot != 0, "Invalid proposal.");
         require(!proposal.hasEnded, "Voting has ended for this proposal.");
-        if (block.timestamp < proposal.startTime) revert NotYetStarted();
-        if (block.timestamp > proposal.endTime) revert VotingEnded();
-
+        require(
+            block.timestamp >= proposal.startTime,
+            "Voting not yet started."
+        );
+        require(block.timestamp <= proposal.endTime, "Voting time has ended.");
         require(!proposal.voted[leaf], "Already voted.");
 
         if (!verifyMerkleProof(proposal, merkleProof, leaf)) {
             revert InvalidMerkleProof();
         }
+        require(proof.length == 8, "Invalid proof");
+        uint256[2] memory a = [proof[0], proof[1]];
+        uint256[2][2] memory b = [[proof[2], proof[3]], [proof[4], proof[5]]];
+        uint256[2] memory c = [proof[6], proof[7]];
+        uint256[2] memory input = [
+            proposal.passcodeHash,
+            uint256(uint160(msg.sender))
+        ];
+        require(verifier.verifyProof(a, b, c, input), "Failed verify proof");
         proposal.votes[support] += 1;
         proposal.voted[leaf] = true;
         emit VoteReceived(proposalId, support);

@@ -2,11 +2,13 @@
   "name": "hardhat-project",
   "devDependencies": {
     "@nomicfoundation/hardhat-toolbox": "^3.0.0",
+    "@types/snarkjs": "^0.7.6",
     "hardhat": "^2.18.2"
   },
   "dependencies": {
     "@openzeppelin/contracts": "^5.0.0",
     "keccak256": "^1.0.6",
-    "merkletreejs": "^0.3.10"
+    "merkletreejs": "^0.3.10",
+    "snarkjs": "^0.7.2"
   }
 }
