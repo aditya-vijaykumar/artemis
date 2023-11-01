@@ -51,13 +51,6 @@ contract ArtemisDAOVoting is Ownable, Groth16Verifier, Pausable {
         uint256 _quorum,
         uint256 passcodeHash
     ) external onlyOwner {
-        require(duration > 0, "Duration should be greater than zero");
-
-        require(
-            _quorum >= 0 && _quorum <= 100,
-            "Quorum should be between 0 and 100"
-        );
-
         proposalCount += 1;
         proposals[proposalCount].merkleRoot = _merkleRoot;
         proposals[proposalCount].proposalDescription = description;
@@ -98,6 +91,10 @@ contract ArtemisDAOVoting is Ownable, Groth16Verifier, Pausable {
     function voteForProposal(
         uint256 proposalId,
         bool support,
+        uint[2] calldata _pA,
+        uint[2][2] calldata _pB,
+        uint[2] calldata _pC,
+        uint[2] calldata _pubSignals,
         bytes32[] calldata merkleProof,
         bytes32 leaf,
         uint256[] memory proof
@@ -112,6 +109,9 @@ contract ArtemisDAOVoting is Ownable, Groth16Verifier, Pausable {
         require(block.timestamp <= proposal.endTime, "Voting time has ended.");
         require(!proposal.voted[leaf], "Already voted.");
 
+        if (!verifier.verifyProof(_pA, _pB, _pC, _pubSignals)) {
+            revert InvalidZkSnarkProof();
+        }
         if (!verifyMerkleProof(proposal, merkleProof, leaf)) {
             revert InvalidMerkleProof();
         }
@@ -143,16 +143,9 @@ contract ArtemisDAOVoting is Ownable, Groth16Verifier, Pausable {
         proposal.hasEnded = true;
 
         uint256 totalVotes = proposal.votes[true] + proposal.votes[false];
-        bool achievedQuorum = false;
-        if (totalVotes > 0) {
-            achievedQuorum =
-                (totalVotes * 100) /
-                    (proposal.votes[true] +
-                        proposal.votes[false] +
-                        totalVotes) >=
-                proposal.quorum;
-        }
-
+        bool achievedQuorum = (totalVotes * 100) /
+            (proposal.votes[true] + proposal.votes[false] + totalVotes) >=
+            proposal.quorum;
         bool isSupported = proposal.votes[true] > proposal.votes[false];
 
         emit ProposalEnded(proposalId, achievedQuorum, isSupported);

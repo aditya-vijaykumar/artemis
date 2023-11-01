@@ -9,3 +9,36 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
+
+model Address {
+  addressId                 String                      @id @default(uuid()) @db.Uuid
+  address                   String                      @unique
+  createdAt                 DateTime                    @default(now()) @db.Timestamptz(6)
+  PolygonIdCredentialIssued PolygonIdCredentialIssued[]
+}
+
+model DAO {
+  daoId                     String                      @id @default(uuid()) @db.Uuid
+  daoKey                    String                      @unique
+  daoName                   String
+  chainId                   Int
+  contractAddress           String                      @unique
+  PolygonIdCredentialIssued PolygonIdCredentialIssued[]
+}
+
+model PolygonIdCredentialIssued {
+  credentialId         String                     @id @default(uuid()) @db.Uuid
+  addressId            String                     @db.Uuid
+  daoId                String                     @db.Uuid
+  claimId              String
+  validTill            DateTime                   @db.Timestamptz(6)
+  issuedDate           DateTime                   @default(now()) @db.Timestamptz(6)
+  updatedAt            DateTime?                  @db.Timestamptz(6)
+  revoked              Boolean                    @default(false)
+  previousClaimId      String?
+  previousCredentialId String?                    @unique @db.Uuid
+  PreviousCredential   PolygonIdCredentialIssued? @relation("WalletCredentialHistory", fields: [previousCredentialId], references: [credentialId], onDelete: NoAction, onUpdate: NoAction)
+  SucceedingCredential PolygonIdCredentialIssued? @relation("WalletCredentialHistory")
+  Address              Address                    @relation(fields: [addressId], references: [addressId], onDelete: NoAction, onUpdate: NoAction)
+  DAO                  DAO                        @relation(fields: [daoId], references: [daoId], onDelete: NoAction, onUpdate: NoAction)
+}

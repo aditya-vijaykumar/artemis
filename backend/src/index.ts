@@ -2,6 +2,8 @@ import "dotenv/config";
 import express from "express";
 import bodyParser from "body-parser";
 import cors from "cors";
+import routes from "./routes/index";
+
 
 const app = express();
 app.disable("x-powered-by");
@@ -25,6 +27,9 @@ app.use((req, res, next) => {
 
   next();
 });
+
+app.use(routes);
+
 
 app.listen(port, async () => {
   console.log(`Server listening in dev mode to port ${port} - ${new Date()}`);
