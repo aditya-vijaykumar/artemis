@@ -91,10 +91,6 @@ contract ArtemisDAOVoting is Ownable, Groth16Verifier, Pausable {
     function voteForProposal(
         uint256 proposalId,
         bool support,
-        uint[2] calldata _pA,
-        uint[2][2] calldata _pB,
-        uint[2] calldata _pC,
-        uint[2] calldata _pubSignals,
         bytes32[] calldata merkleProof,
         bytes32 leaf,
         uint256[] memory proof
@@ -109,9 +105,6 @@ contract ArtemisDAOVoting is Ownable, Groth16Verifier, Pausable {
         require(block.timestamp <= proposal.endTime, "Voting time has ended.");
         require(!proposal.voted[leaf], "Already voted.");
 
-        if (!verifier.verifyProof(_pA, _pB, _pC, _pubSignals)) {
-            revert InvalidZkSnarkProof();
-        }
         if (!verifyMerkleProof(proposal, merkleProof, leaf)) {
             revert InvalidMerkleProof();
         }
