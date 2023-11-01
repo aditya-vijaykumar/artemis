@@ -1,11 +1,5 @@
 {
   "name": "hardhat-project",
-  "version": "1.0.0",
-  "scripts": {
-    "compile": "hardhat compile",
-    "test": "hardhat test",
-    "remixd": "remixd -s Users/auralshin/artemis/zk-voting-contracts --remix-ide https://remix.ethereum.org"
-  },
   "devDependencies": {
     "@nomicfoundation/hardhat-toolbox": "^3.0.0",
     "@types/snarkjs": "^0.7.6",
@@ -13,7 +7,6 @@
   },
   "dependencies": {
     "@openzeppelin/contracts": "^5.0.0",
-    "@remix-project/remixd": "^0.6.18",
     "keccak256": "^1.0.6",
     "merkletreejs": "^0.3.10",
     "snarkjs": "^0.7.2"
