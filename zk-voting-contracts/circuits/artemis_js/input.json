@@ -1,1 +1,5 @@
-{ "addr": "0x81DcaEa6454f56639720F2ca3dB4E958bf4fb013", "secret": "131199" }
+{
+    "addr": 5,
+    "secret": 10
+  }
+  
