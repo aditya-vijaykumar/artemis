@@ -50,6 +50,10 @@ contract ArtemisDAOVoting is Ownable, Groth16Verifier, Pausable {
         uint256 _quorum
     ) external onlyOwner {
         require(duration > 0, "Duration should be greater than zero");
+        require(
+            _quorum >= 0 && _quorum <= 100,
+            "Quorum should be between 0 and 100"
+        );
         proposalCount += 1;
         proposals[proposalCount].merkleRoot = _merkleRoot;
         proposals[proposalCount].proposalDescription = description;
